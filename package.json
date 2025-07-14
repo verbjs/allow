@@ -1,0 +1,23 @@
+{
+  "name": "@verb/allow",
+  "module": "src/index.ts",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "verb": "file:../verb"
+  },
+  "scripts": {
+    "test": "bun test tests/",
+    "test:watch": "bun test tests/ --watch",
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "dev": "bun --watch src/index.ts",
+    "migrate": "bun src/cli.ts migrate",
+    "rollback": "bun src/cli.ts rollback"
+  }
+}
