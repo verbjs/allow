@@ -1,6 +1,6 @@
 import { test, expect, describe, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { createDatabase, createUser, getUserById, createUserStrategy, getUserByStrategy, getUserStrategies, deleteUserStrategy, createSession, getSession, updateSession, deleteSession, cleanupExpiredSessions } from "../src/database";
+import { createDatabase, createUser, getUserById, createUserStrategy, getUserByStrategy, getDatabaseUserStrategies, deleteUserStrategy, createDatabaseSession, getDatabaseSession, updateDatabaseSession, deleteSession, cleanupExpiredSessions } from "../src/database";
 import type { DatabaseInstance } from "../src/database";
 import type { AuthUser, UserStrategy, AuthSession } from "../src/types";
 
@@ -148,7 +148,7 @@ describe("AuthDatabase", () => {
     await createUserStrategy(db, strategy1);
     await createUserStrategy(db, strategy2);
 
-    const strategies = await getUserStrategies(db, user.id);
+    const strategies = await getDatabaseUserStrategies(db, user.id);
     
     expect(strategies).toHaveLength(2);
     expect(strategies.map(s => s.strategyName)).toContain("github");
@@ -176,12 +176,12 @@ describe("AuthDatabase", () => {
 
     await createUserStrategy(db, strategyData);
 
-    let strategies = await getUserStrategies(db, user.id);
+    let strategies = await getDatabaseUserStrategies(db, user.id);
     expect(strategies).toHaveLength(1);
 
     await deleteUserStrategy(db, user.id, "github");
 
-    strategies = await getUserStrategies(db, user.id);
+    strategies = await getDatabaseUserStrategies(db, user.id);
     expect(strategies).toHaveLength(0);
   });
 
@@ -203,7 +203,7 @@ describe("AuthDatabase", () => {
       expiresAt: new Date(Date.now() + 3600000)
     };
 
-    const session = await createSession(db, sessionData);
+    const session = await createDatabaseSession(db, sessionData);
     
     expect(session).toBeDefined();
     expect(session.id).toBe(sessionData.id);
@@ -212,7 +212,7 @@ describe("AuthDatabase", () => {
     expect(session.expiresAt).toEqual(sessionData.expiresAt);
     expect(session.createdAt).toBeInstanceOf(Date);
 
-    const retrieved = await getSession(db, session.id);
+    const retrieved = await getDatabaseSession(db, session.id);
     expect(retrieved).toBeDefined();
     expect(retrieved?.id).toBe(session.id);
     expect(retrieved?.data).toEqual(session.data);
@@ -236,9 +236,9 @@ describe("AuthDatabase", () => {
       expiresAt: new Date(Date.now() - 1000) // Expired
     };
 
-    await createSession(db, sessionData);
+    await createDatabaseSession(db, sessionData);
 
-    const session = await getSession(db, sessionData.id);
+    const session = await getDatabaseSession(db, sessionData.id);
     expect(session).toBeNull();
   });
 
@@ -260,12 +260,12 @@ describe("AuthDatabase", () => {
       expiresAt: new Date(Date.now() + 3600000)
     };
 
-    await createSession(db, sessionData);
+    await createDatabaseSession(db, sessionData);
 
     const newData = { test: "updated", new: "field" };
-    await updateSession(db, sessionData.id, newData);
+    await updateDatabaseSession(db, sessionData.id, newData);
 
-    const session = await getSession(db, sessionData.id);
+    const session = await getDatabaseSession(db, sessionData.id);
     expect(session?.data).toEqual(newData);
   });
 
@@ -287,14 +287,14 @@ describe("AuthDatabase", () => {
       expiresAt: new Date(Date.now() + 3600000)
     };
 
-    await createSession(db, sessionData);
+    await createDatabaseSession(db, sessionData);
 
-    let session = await getSession(db, sessionData.id);
+    let session = await getDatabaseSession(db, sessionData.id);
     expect(session).toBeDefined();
 
     await deleteSession(db, sessionData.id);
 
-    session = await getSession(db, sessionData.id);
+    session = await getDatabaseSession(db, sessionData.id);
     expect(session).toBeNull();
   });
 
@@ -323,13 +323,13 @@ describe("AuthDatabase", () => {
       expiresAt: new Date(Date.now() + 3600000)
     };
 
-    await createSession(db, expiredSession);
-    await createSession(db, validSession);
+    await createDatabaseSession(db, expiredSession);
+    await createDatabaseSession(db, validSession);
 
     await cleanupExpiredSessions(db);
 
-    const expired = await getSession(db, expiredSession.id);
-    const valid = await getSession(db, validSession.id);
+    const expired = await getDatabaseSession(db, expiredSession.id);
+    const valid = await getDatabaseSession(db, validSession.id);
 
     expect(expired).toBeNull();
     expect(valid).toBeDefined();

@@ -18,6 +18,8 @@
     "build": "bun build src/index.ts --outdir dist --target node",
     "dev": "bun --watch src/index.ts",
     "migrate": "bun src/cli.ts migrate",
-    "rollback": "bun src/cli.ts rollback"
+    "rollback": "bun src/cli.ts rollback",
+    "lint": "bunx biome lint --fix ./src/**/*.ts",
+    "format": "bunx biome format --write ./src/**/*.ts"
   }
 }

@@ -5,10 +5,10 @@ import { generateError, generateSuccess } from "./base";
 export function createLocalStrategy(config: LocalConfig): AuthStrategy {
   return {
     name: "local",
-    
+
     async authenticate(req: VerbRequest): Promise<AuthResult> {
       const { usernameField = "username", passwordField = "password" } = config;
-      
+
       const username = req.body?.[usernameField];
       const password = req.body?.[passwordField];
 
@@ -23,21 +23,21 @@ export function createLocalStrategy(config: LocalConfig): AuthStrategy {
         }
 
         return generateSuccess(user);
-      } catch (error) {
+      } catch (_error) {
         return generateError("Authentication failed");
       }
-    }
+    },
   };
 }
 
-async function verifyCredentials(username: string, password: string): Promise<AuthUser | null> {
+async function verifyCredentials(_username: string, _password: string): Promise<AuthUser | null> {
   throw new Error("verifyCredentials must be implemented by the application");
 }
 
 export async function hashPassword(password: string, rounds: number = 10): Promise<string> {
   return await Bun.password.hash(password, {
     algorithm: "bcrypt",
-    cost: rounds
+    cost: rounds,
   });
 }
 

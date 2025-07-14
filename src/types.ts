@@ -108,12 +108,3 @@ export interface AuthHandlers {
   unlink: (strategyName: string) => (req: VerbRequest, res: VerbResponse) => void | Promise<void>;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthUser;
-      session?: AuthSession;
-      isAuthenticated?: () => boolean;
-    }
-  }
-}

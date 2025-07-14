@@ -88,7 +88,7 @@ export async function getUserById(database: DatabaseInstance, id: string): Promi
   
   if (!row) return null;
 
-  const strategies = await getUserStrategies(database, id);
+  const strategies = await getDatabaseUserStrategies(database, id);
   
   return {
     ...row,
@@ -110,7 +110,7 @@ export async function getUserByStrategy(database: DatabaseInstance, strategyName
   
   if (!row) return null;
 
-  const strategies = await getUserStrategies(database, row.id);
+  const strategies = await getDatabaseUserStrategies(database, row.id);
   
   return {
     ...row,
@@ -121,7 +121,7 @@ export async function getUserByStrategy(database: DatabaseInstance, strategyName
   };
 }
 
-export async function getUserStrategies(database: DatabaseInstance, userId: string): Promise<UserStrategy[]> {
+export async function getDatabaseUserStrategies(database: DatabaseInstance, userId: string): Promise<UserStrategy[]> {
   const query = database.db.query("SELECT * FROM user_strategies WHERE user_id = ?1");
   const rows = query.all(userId) as any[];
   
@@ -180,7 +180,7 @@ export async function deleteUserStrategy(database: DatabaseInstance, userId: str
   query.run(userId, strategyName);
 }
 
-export async function createSession(database: DatabaseInstance, sessionData: Omit<AuthSession, "createdAt">): Promise<AuthSession> {
+export async function createDatabaseSession(database: DatabaseInstance, sessionData: Omit<AuthSession, "createdAt">): Promise<AuthSession> {
   const query = database.db.query(`
     INSERT INTO auth_sessions (id, user_id, data, expires_at, created_at)
     VALUES (?1, ?2, ?3, ?4, CURRENT_TIMESTAMP)
@@ -203,7 +203,7 @@ export async function createSession(database: DatabaseInstance, sessionData: Omi
   };
 }
 
-export async function getSession(database: DatabaseInstance, sessionId: string): Promise<AuthSession | null> {
+export async function getDatabaseSession(database: DatabaseInstance, sessionId: string): Promise<AuthSession | null> {
   const query = database.db.query("SELECT * FROM auth_sessions WHERE id = ?1");
   const row = query.get(sessionId) as any;
   
@@ -225,7 +225,7 @@ export async function getSession(database: DatabaseInstance, sessionId: string):
   return session;
 }
 
-export async function updateSession(database: DatabaseInstance, sessionId: string, data: Record<string, any>): Promise<void> {
+export async function updateDatabaseSession(database: DatabaseInstance, sessionId: string, data: Record<string, any>): Promise<void> {
   const query = database.db.query("UPDATE auth_sessions SET data = ?1 WHERE id = ?2");
   query.run(JSON.stringify(data), sessionId);
 }

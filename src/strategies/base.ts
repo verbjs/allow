@@ -3,7 +3,7 @@ import type { AuthResult } from "../types";
 export function generateError(message: string): AuthResult {
   return {
     success: false,
-    error: message
+    error: message,
   };
 }
 
@@ -12,6 +12,6 @@ export function generateSuccess(user: any, tokens?: any, redirect?: string): Aut
     success: true,
     user,
     tokens,
-    redirect
+    redirect,
   };
 }

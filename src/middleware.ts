@@ -65,12 +65,10 @@ export function sessionMiddleware(allow: AllowInstance) {
   };
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthUser;
-      session?: AuthSession;
-      isAuthenticated?: () => boolean;
-    }
+declare module "verb" {
+  interface VerbRequest {
+    user?: AuthUser;
+    session?: AuthSession;
+    isAuthenticated?: () => boolean;
   }
 }

@@ -23,7 +23,7 @@ export interface AllowInstance {
 
 export function createAllow(config: AuthConfig): AllowInstance {
   const strategies = new Map<string, AuthStrategy>();
-  let database: any = undefined;
+  let database: any ;
   
   if (config.database) {
     database = db.createDatabase(config.database);
@@ -98,7 +98,7 @@ export async function createSession(allow: AllowInstance, user: AuthUser, data: 
   };
 
   if (allow.database) {
-    await db.createSession(allow.database, session);
+    await db.createDatabaseSession(allow.database, session);
   }
 
   return session;
@@ -106,12 +106,12 @@ export async function createSession(allow: AllowInstance, user: AuthUser, data: 
 
 export async function getSession(allow: AllowInstance, sessionId: string): Promise<AuthSession | null> {
   if (!allow.database) return null;
-  return db.getSession(allow.database, sessionId);
+  return db.getDatabaseSession(allow.database, sessionId);
 }
 
 export async function updateSession(allow: AllowInstance, sessionId: string, data: Record<string, any>): Promise<void> {
   if (!allow.database) return;
-  await db.updateSession(allow.database, sessionId, data);
+  await db.updateDatabaseSession(allow.database, sessionId, data);
 }
 
 export async function destroySession(allow: AllowInstance, sessionId: string): Promise<void> {
@@ -123,7 +123,7 @@ export async function getUser(allow: AllowInstance, req: VerbRequest): Promise<A
   const sessionId = req.cookies?.["allow-session"];
   if (!sessionId || !allow.database) return null;
 
-  const session = await db.getSession(allow.database, sessionId);
+  const session = await db.getDatabaseSession(allow.database, sessionId);
   if (!session) return null;
 
   return db.getUserById(allow.database, session.userId);
@@ -156,7 +156,7 @@ export async function unlinkStrategy(allow: AllowInstance, userId: string, strat
 
 export async function getUserStrategies(allow: AllowInstance, userId: string): Promise<UserStrategy[]> {
   if (!allow.database) return [];
-  return db.getUserStrategies(allow.database, userId);
+  return db.getDatabaseUserStrategies(allow.database, userId);
 }
 
 export function getMiddleware(allow: AllowInstance) {

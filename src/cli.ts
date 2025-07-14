@@ -14,7 +14,7 @@ switch (command) {
     });
     break;
     
-  case "rollback":
+  case "rollback": {
     const steps = parseInt(process.argv[3]) || 1;
     await rollbackMigrations({
       database: {
@@ -23,6 +23,7 @@ switch (command) {
       }
     }, steps);
     break;
+  }
     
   default:
     console.log("Usage: bun src/cli.ts [migrate|rollback] [steps]");
