@@ -1,4 +1,4 @@
-import type { VerbRequest } from "verb";
+import type { Request } from "verb";
 import type { AuthResult, OAuthConfig, AuthUser, AuthStrategy } from "../types";
 import { generateError, generateSuccess } from "./base";
 
@@ -6,7 +6,7 @@ export function createOAuthStrategy(name: string, config: OAuthConfig): AuthStra
   return {
     name,
 
-    async authenticate(_req: VerbRequest): Promise<AuthResult> {
+    async authenticate(_req: Request): Promise<AuthResult> {
       const state = generateState();
       const authURL = buildAuthURL(config, state);
 
@@ -16,7 +16,7 @@ export function createOAuthStrategy(name: string, config: OAuthConfig): AuthStra
       };
     },
 
-    async callback(req: VerbRequest): Promise<AuthResult> {
+    async callback(req: Request): Promise<AuthResult> {
       const code = req.query?.code;
       const _state = req.query?.state;
 

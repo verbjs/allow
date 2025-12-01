@@ -1,4 +1,4 @@
-import type { VerbRequest, VerbResponse } from "verb";
+import type { Request, Response } from "verb";
 
 export interface AuthConfig {
   secret: string;
@@ -77,8 +77,8 @@ export interface AuthSession {
 
 export interface AuthStrategy {
   name: string;
-  authenticate: (req: VerbRequest, config: any) => Promise<AuthResult>;
-  callback?: (req: VerbRequest, config: any) => Promise<AuthResult>;
+  authenticate: (req: Request, config: any) => Promise<AuthResult>;
+  callback?: (req: Request, config: any) => Promise<AuthResult>;
 }
 
 export interface AuthResult {
@@ -94,17 +94,17 @@ export interface AuthResult {
 }
 
 export interface AuthMiddleware {
-  requireAuth: (req: VerbRequest, res: VerbResponse, next: () => void) => void | Promise<void>;
-  optionalAuth: (req: VerbRequest, res: VerbResponse, next: () => void) => void | Promise<void>;
-  requireRole: (role: string) => (req: VerbRequest, res: VerbResponse, next: () => void) => void | Promise<void>;
+  requireAuth: (req: Request, res: Response, next: () => void) => void | Promise<void>;
+  optionalAuth: (req: Request, res: Response, next: () => void) => void | Promise<void>;
+  requireRole: (role: string) => (req: Request, res: Response, next: () => void) => void | Promise<void>;
 }
 
 export interface AuthHandlers {
-  login: (strategyName: string) => (req: VerbRequest, res: VerbResponse) => void | Promise<void>;
-  callback: (strategyName: string) => (req: VerbRequest, res: VerbResponse) => void | Promise<void>;
-  logout: (req: VerbRequest, res: VerbResponse) => void | Promise<void>;
-  profile: (req: VerbRequest, res: VerbResponse) => void | Promise<void>;
-  link: (strategyName: string) => (req: VerbRequest, res: VerbResponse) => void | Promise<void>;
-  unlink: (strategyName: string) => (req: VerbRequest, res: VerbResponse) => void | Promise<void>;
+  login: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
+  callback: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
+  logout: (req: Request, res: Response) => void | Promise<void>;
+  profile: (req: Request, res: Response) => void | Promise<void>;
+  link: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
+  unlink: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
 }
 

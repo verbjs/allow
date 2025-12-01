@@ -1,4 +1,4 @@
-import type { VerbRequest } from "verb";
+import type { Request } from "verb";
 import type { AuthResult, JWTConfig, AuthUser, AuthStrategy } from "../types";
 import { generateError, generateSuccess } from "./base";
 
@@ -6,7 +6,7 @@ export function createJWTStrategy(_config: JWTConfig): AuthStrategy {
   return {
     name: "jwt",
 
-    async authenticate(req: VerbRequest): Promise<AuthResult> {
+    async authenticate(req: Request): Promise<AuthResult> {
       const token = extractToken(req);
 
       if (!token) {
@@ -25,7 +25,7 @@ export function createJWTStrategy(_config: JWTConfig): AuthStrategy {
   };
 }
 
-function extractToken(req: VerbRequest): string | null {
+function extractToken(req: Request): string | null {
   const authHeader = req.headers.get("Authorization");
   if (authHeader?.startsWith("Bearer ")) {
     return authHeader.substring(7);

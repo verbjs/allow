@@ -1,4 +1,4 @@
-import type { VerbRequest } from "verb";
+import type { Request } from "verb";
 import type { AuthResult, LocalConfig, AuthUser, AuthStrategy } from "../types";
 import { generateError, generateSuccess } from "./base";
 
@@ -6,7 +6,7 @@ export function createLocalStrategy(config: LocalConfig): AuthStrategy {
   return {
     name: "local",
 
-    async authenticate(req: VerbRequest): Promise<AuthResult> {
+    async authenticate(req: Request): Promise<AuthResult> {
       const { usernameField = "username", passwordField = "password" } = config;
 
       const username = req.body?.[usernameField];

@@ -1,4 +1,4 @@
-import type { VerbRequest, VerbResponse } from "verb";
+import type { Request, Response } from "verb";
 import type { 
   AuthConfig, 
   AuthUser, 
@@ -65,7 +65,7 @@ export function useStrategy(allow: AllowInstance, strategy: AuthStrategy): void 
   allow.strategies.set(strategy.name, strategy);
 }
 
-export async function authenticate(allow: AllowInstance, strategyName: string, req: VerbRequest): Promise<AuthResult> {
+export async function authenticate(allow: AllowInstance, strategyName: string, req: Request): Promise<AuthResult> {
   const strategy = allow.strategies.get(strategyName);
   if (!strategy) {
     return { success: false, error: `Strategy '${strategyName}' not found` };
@@ -75,7 +75,7 @@ export async function authenticate(allow: AllowInstance, strategyName: string, r
   return strategy.authenticate(req, strategyConfig?.config);
 }
 
-export async function callback(allow: AllowInstance, strategyName: string, req: VerbRequest): Promise<AuthResult> {
+export async function callback(allow: AllowInstance, strategyName: string, req: Request): Promise<AuthResult> {
   const strategy = allow.strategies.get(strategyName);
   if (!strategy?.callback) {
     return { success: false, error: `Strategy '${strategyName}' does not support callbacks` };
@@ -119,7 +119,7 @@ export async function destroySession(allow: AllowInstance, sessionId: string): P
   await db.deleteSession(allow.database, sessionId);
 }
 
-export async function getUser(allow: AllowInstance, req: VerbRequest): Promise<AuthUser | null> {
+export async function getUser(allow: AllowInstance, req: Request): Promise<AuthUser | null> {
   const sessionId = req.cookies?.["allow-session"];
   if (!sessionId || !allow.database) return null;
 
@@ -170,7 +170,7 @@ export function getSessionMiddleware(allow: AllowInstance) {
 export function getHandlers(allow: AllowInstance): AuthHandlers {
   return {
     login: (strategyName: string) => {
-      return async (req: VerbRequest, res: VerbResponse) => {
+      return async (req: Request, res: Response) => {
         const result = await authenticate(allow, strategyName, req);
         
         if (!result.success) {
@@ -195,7 +195,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     },
 
     callback: (strategyName: string) => {
-      return async (req: VerbRequest, res: VerbResponse) => {
+      return async (req: Request, res: Response) => {
         const result = await callback(allow, strategyName, req);
         
         if (!result.success) {
@@ -227,7 +227,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
       };
     },
 
-    logout: async (req: VerbRequest, res: VerbResponse) => {
+    logout: async (req: Request, res: Response) => {
       const sessionId = req.cookies?.["allow-session"];
       if (sessionId) {
         await destroySession(allow, sessionId);
@@ -237,7 +237,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
       res.json({ success: true });
     },
 
-    profile: async (req: VerbRequest, res: VerbResponse) => {
+    profile: async (req: Request, res: Response) => {
       const user = await getUser(allow, req);
       if (!user) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -248,7 +248,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     },
 
     link: (strategyName: string) => {
-      return async (req: VerbRequest, res: VerbResponse) => {
+      return async (req: Request, res: Response) => {
         const user = await getUser(allow, req);
         if (!user) {
           return res.status(401).json({ error: "Not authenticated" });
@@ -272,7 +272,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     },
 
     unlink: (strategyName: string) => {
-      return async (req: VerbRequest, res: VerbResponse) => {
+      return async (req: Request, res: Response) => {
         const user = await getUser(allow, req);
         if (!user) {
           return res.status(401).json({ error: "Not authenticated" });

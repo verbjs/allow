@@ -1,11 +1,11 @@
-import type { VerbRequest, VerbResponse } from "verb";
+import type { Request, Response } from "verb";
 import type { AuthMiddleware, AuthUser, AuthSession } from "./types";
 import type { AllowInstance } from "./allow";
 import { getUser, getSession } from "./allow";
 
 export function createAuthMiddleware(allow: AllowInstance): AuthMiddleware {
   return {
-    requireAuth: async (req: VerbRequest, res: VerbResponse, next: () => void) => {
+    requireAuth: async (req: Request, res: Response, next: () => void) => {
       const user = await getUser(allow, req);
       
       if (!user) {
@@ -17,7 +17,7 @@ export function createAuthMiddleware(allow: AllowInstance): AuthMiddleware {
       next();
     },
 
-    optionalAuth: async (req: VerbRequest, res: VerbResponse, next: () => void) => {
+    optionalAuth: async (req: Request, res: Response, next: () => void) => {
       const user = await getUser(allow, req);
       
       if (user) {
@@ -31,7 +31,7 @@ export function createAuthMiddleware(allow: AllowInstance): AuthMiddleware {
     },
 
     requireRole: (role: string) => {
-      return async (req: VerbRequest, res: VerbResponse, next: () => void) => {
+      return async (req: Request, res: Response, next: () => void) => {
         const user = await getUser(allow, req);
         
         if (!user) {
@@ -51,7 +51,7 @@ export function createAuthMiddleware(allow: AllowInstance): AuthMiddleware {
 }
 
 export function sessionMiddleware(allow: AllowInstance) {
-  return async (req: VerbRequest, res: VerbResponse, next: () => void) => {
+  return async (req: Request, res: Response, next: () => void) => {
     const sessionId = req.cookies?.["allow-session"];
     
     if (sessionId) {
@@ -66,7 +66,7 @@ export function sessionMiddleware(allow: AllowInstance) {
 }
 
 declare module "verb" {
-  interface VerbRequest {
+  interface Request {
     user?: AuthUser;
     session?: AuthSession;
     isAuthenticated?: () => boolean;
