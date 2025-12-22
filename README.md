@@ -6,10 +6,10 @@ Authentication library for Verb. Sessions, JWT, OAuth, and account linking.
 
 | Package | Description |
 |---------|-------------|
-| [Verb](https://github.com/verb-js/verb) | Fast web framework for Bun |
-| [Hull](https://github.com/verb-js/hull) | Ecto-inspired database toolkit |
-| [Allow](https://github.com/verb-js/allow) | Authentication library (this repo) |
-| [Hoist](https://github.com/verb-js/hoist) | Deployment platform |
+| [Verb](https://github.com/verbjs/verb) | Fast web framework for Bun |
+| [Hull](https://github.com/verbjs/hull) | Ecto-inspired database toolkit |
+| [Allow](https://github.com/verbjs/allow) | Authentication library (this repo) |
+| [Hoist](https://github.com/verbjs/hoist) | Deployment platform |
 
 ## Features
 
