@@ -96,7 +96,9 @@ export interface AuthResult {
 export interface AuthMiddleware {
   requireAuth: (req: Request, res: Response, next: () => void) => void | Promise<void>;
   optionalAuth: (req: Request, res: Response, next: () => void) => void | Promise<void>;
-  requireRole: (role: string) => (req: Request, res: Response, next: () => void) => void | Promise<void>;
+  requireRole: (
+    role: string,
+  ) => (req: Request, res: Response, next: () => void) => void | Promise<void>;
 }
 
 export interface AuthHandlers {
@@ -107,4 +109,3 @@ export interface AuthHandlers {
   link: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
   unlink: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
 }
-

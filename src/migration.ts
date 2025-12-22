@@ -12,23 +12,23 @@ export async function runMigrations(config: MigrationConfig): Promise<void> {
   }
 
   const db = new Database(config.database.connection);
-  
+
   try {
     createMigrationTable(db);
     const appliedMigrations = getAppliedMigrations(db);
-    
+
     for (const migration of migrations) {
       if (appliedMigrations.includes(migration.id) && !config.force) {
         console.log(`Skipping migration ${migration.id} (already applied)`);
         continue;
       }
-      
+
       console.log(`Running migration ${migration.id}: ${migration.description}`);
       await migration.up(db);
       markMigrationAsApplied(db, migration.id);
       console.log(`Migration ${migration.id} completed`);
     }
-    
+
     console.log("All migrations completed successfully");
   } catch (error) {
     console.error("Migration failed:", error);
@@ -38,34 +38,35 @@ export async function runMigrations(config: MigrationConfig): Promise<void> {
   }
 }
 
-export async function rollbackMigrations(config: MigrationConfig, steps: number = 1): Promise<void> {
+export async function rollbackMigrations(
+  config: MigrationConfig,
+  steps: number = 1,
+): Promise<void> {
   if (config.database.type !== "sqlite") {
     throw new Error("Only SQLite rollbacks are currently supported");
   }
 
   const db = new Database(config.database.connection);
-  
+
   try {
     createMigrationTable(db);
     const appliedMigrations = getAppliedMigrations(db);
-    
-    const migrationsToRollback = appliedMigrations
-      .slice(-steps)
-      .reverse();
-    
+
+    const migrationsToRollback = appliedMigrations.slice(-steps).reverse();
+
     for (const migrationId of migrationsToRollback) {
-      const migration = migrations.find(m => m.id === migrationId);
+      const migration = migrations.find((m) => m.id === migrationId);
       if (!migration) {
         console.warn(`Migration ${migrationId} not found, skipping rollback`);
         continue;
       }
-      
+
       console.log(`Rolling back migration ${migration.id}: ${migration.description}`);
       await migration.down(db);
       markMigrationAsRolledBack(db, migration.id);
       console.log(`Migration ${migration.id} rolled back`);
     }
-    
+
     console.log("Rollback completed successfully");
   } catch (error) {
     console.error("Rollback failed:", error);
@@ -100,7 +101,7 @@ const migrations: Migration[] = [
     },
     down: async (db: Database) => {
       db.exec("DROP TABLE IF EXISTS auth_users;");
-    }
+    },
   },
   {
     id: "002_create_user_strategies_table",
@@ -123,7 +124,7 @@ const migrations: Migration[] = [
     },
     down: async (db: Database) => {
       db.exec("DROP TABLE IF EXISTS user_strategies;");
-    }
+    },
   },
   {
     id: "003_create_auth_sessions_table",
@@ -142,7 +143,7 @@ const migrations: Migration[] = [
     },
     down: async (db: Database) => {
       db.exec("DROP TABLE IF EXISTS auth_sessions;");
-    }
+    },
   },
   {
     id: "004_create_indexes",
@@ -162,21 +163,21 @@ const migrations: Migration[] = [
         DROP INDEX IF EXISTS idx_auth_sessions_user_id;
         DROP INDEX IF EXISTS idx_auth_sessions_expires;
       `);
-    }
+    },
   },
   {
     id: "005_add_user_roles",
     description: "Add roles field to users profile",
-    up: async (db: Database) => {
+    up: async (_db: Database) => {
       // SQLite doesn't support ALTER COLUMN, so we'll handle this in application logic
       // The profile column already exists and can store role information
       console.log("Roles will be stored in the profile JSON field");
     },
-    down: async (db: Database) => {
+    down: async (_db: Database) => {
       // No-op for SQLite
       console.log("Roles removal is handled in application logic");
-    }
-  }
+    },
+  },
 ];
 
 function createMigrationTable(db: Database): void {
@@ -191,7 +192,7 @@ function createMigrationTable(db: Database): void {
 function getAppliedMigrations(db: Database): string[] {
   const query = db.query("SELECT id FROM migrations ORDER BY applied_at");
   const rows = query.all() as { id: string }[];
-  return rows.map(row => row.id);
+  return rows.map((row) => row.id);
 }
 
 function markMigrationAsApplied(db: Database, migrationId: string): void {

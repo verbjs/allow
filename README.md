@@ -1,6 +1,15 @@
-# Allow - Authentication Library for Verb
+# Allow
 
-**Allow** is a flexible, TypeScript-first authentication library designed specifically for the Verb framework. It provides a simple yet powerful way to add authentication to your Verb applications with support for multiple authentication strategies, user account linking, and session management.
+Authentication library for Verb. Sessions, JWT, OAuth, and account linking.
+
+## Part of the Verb Ecosystem
+
+| Package | Description |
+|---------|-------------|
+| [Verb](https://github.com/verb-js/verb) | Fast web framework for Bun |
+| [Hull](https://github.com/verb-js/hull) | Ecto-inspired database toolkit |
+| [Allow](https://github.com/verb-js/allow) | Authentication library (this repo) |
+| [Hoist](https://github.com/verb-js/hoist) | Deployment platform |
 
 ## Features
 
@@ -16,14 +25,14 @@
 ## Installation
 
 ```bash
-bun add @verb/allow
+bun add @verb-js/allow
 ```
 
 ## Quick Start
 
 ```typescript
 import { createServer } from "verb";
-import { createAllow, getSessionMiddleware, getMiddleware, getHandlers } from "@verb/allow";
+import { createAllow, getSessionMiddleware, getMiddleware, getHandlers } from "@verb-js/allow";
 
 const allow = createAllow({
   secret: "your-secret-key",
@@ -153,7 +162,7 @@ interface StrategyConfig {
 #### Built-in OAuth Providers
 
 ```typescript
-import { useStrategy, githubStrategy, googleStrategy, discordStrategy } from "@verb/allow";
+import { useStrategy, githubStrategy, googleStrategy, discordStrategy } from "@verb-js/allow";
 
 // GitHub
 useStrategy(allow, githubStrategy({
@@ -196,8 +205,8 @@ useStrategy(allow, discordStrategy({
 Create custom authentication strategies as functions:
 
 ```typescript
-import { useStrategy, generateError, generateSuccess } from "@verb/allow";
-import type { VerbRequest, AuthResult, AuthStrategy } from "@verb/allow";
+import { useStrategy, generateError, generateSuccess } from "@verb-js/allow";
+import type { VerbRequest, AuthResult, AuthStrategy } from "@verb-js/allow";
 
 function createAPIKeyStrategy(): AuthStrategy {
   return {
@@ -234,7 +243,7 @@ useStrategy(allow, createAPIKeyStrategy());
 ### Authentication Middleware
 
 ```typescript
-import { getMiddleware } from "@verb/allow";
+import { getMiddleware } from "@verb-js/allow";
 
 const middleware = getMiddleware(allow);
 
@@ -261,7 +270,7 @@ app.get("/admin", middleware.requireRole("admin"), (req, res) => {
 ### Session Middleware
 
 ```typescript
-import { getSessionMiddleware } from "@verb/allow";
+import { getSessionMiddleware } from "@verb-js/allow";
 
 // Add session support
 const sessionMw = getSessionMiddleware(allow);
@@ -273,7 +282,7 @@ app.use(sessionMw);
 Allow users to link multiple authentication methods to a single account:
 
 ```typescript
-import { getMiddleware, getHandlers, getUserStrategies } from "@verb/allow";
+import { getMiddleware, getHandlers, getUserStrategies } from "@verb-js/allow";
 
 const middleware = getMiddleware(allow);
 const handlers = getHandlers(allow);
@@ -293,7 +302,7 @@ const strategies = await getUserStrategies(allow, userId);
 Run database migrations to set up the required tables:
 
 ```typescript
-import { runMigrations } from "@verb/allow";
+import { runMigrations } from "@verb-js/allow";
 
 await runMigrations({
   database: {
@@ -314,7 +323,7 @@ bun run migrate
 Use Bun's built-in password hashing for local authentication:
 
 ```typescript
-import { hashPassword, verifyPassword } from "@verb/allow";
+import { hashPassword, verifyPassword } from "@verb-js/allow";
 
 // Hash password
 const hash = await hashPassword("password123");

@@ -1,16 +1,33 @@
 {
-  "name": "@verb/allow",
+  "name": "@verb-js/allow",
+  "version": "0.0.1",
+  "description": "Authentication library for Verb framework",
+  "author": "Wess Cope",
+  "license": "MIT",
   "module": "src/index.ts",
-  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "verb": "file:../verb"
+    "typescript": "^5",
+    "verb": "^1.0.0"
   },
   "scripts": {
     "test": "bun test tests/",
@@ -20,6 +37,8 @@
     "migrate": "bun src/cli.ts migrate",
     "rollback": "bun src/cli.ts rollback",
     "lint": "bunx biome lint --fix ./src/**/*.ts",
-    "format": "bunx biome format --write ./src/**/*.ts"
+    "format": "bunx biome format --write ./src/**/*.ts",
+    "prepublishOnly": "bun test",
+    "publish:npm": "npm publish --access public"
   }
 }

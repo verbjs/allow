@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import type { AuthUser, UserStrategy, AuthSession, DatabaseConfig } from "./types";
+import type { AuthSession, AuthUser, DatabaseConfig, UserStrategy } from "./types";
 
 export interface DatabaseInstance {
   db: Database;
@@ -11,7 +11,7 @@ export function createDatabase(config: DatabaseConfig): DatabaseInstance {
   }
 
   const db = new Database(config.connection);
-  
+
   if (config.migrate) {
     migrate(db);
   }
@@ -59,7 +59,10 @@ function migrate(db: Database): void {
   `);
 }
 
-export async function createUser(database: DatabaseInstance, userData: Omit<AuthUser, "createdAt" | "updatedAt">): Promise<AuthUser> {
+export async function createUser(
+  database: DatabaseInstance,
+  userData: Omit<AuthUser, "createdAt" | "updatedAt">,
+): Promise<AuthUser> {
   const query = database.db.query(`
     INSERT INTO auth_users (id, username, email, profile, created_at, updated_at)
     VALUES (?1, ?2, ?3, ?4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -70,7 +73,7 @@ export async function createUser(database: DatabaseInstance, userData: Omit<Auth
     userData.id,
     userData.username,
     userData.email,
-    JSON.stringify(userData.profile || {})
+    JSON.stringify(userData.profile || {}),
   ) as any;
 
   return {
@@ -78,71 +81,90 @@ export async function createUser(database: DatabaseInstance, userData: Omit<Auth
     profile: JSON.parse(row.profile || "{}"),
     strategies: [],
     createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at)
+    updatedAt: new Date(row.updated_at),
   };
 }
 
-export async function getUserById(database: DatabaseInstance, id: string): Promise<AuthUser | null> {
+export async function getUserById(
+  database: DatabaseInstance,
+  id: string,
+): Promise<AuthUser | null> {
   const query = database.db.query("SELECT * FROM auth_users WHERE id = ?1");
   const row = query.get(id) as any;
-  
-  if (!row) return null;
+
+  if (!row) {
+    return null;
+  }
 
   const strategies = await getDatabaseUserStrategies(database, id);
-  
+
   return {
     ...row,
     profile: JSON.parse(row.profile || "{}"),
     strategies,
     createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at)
+    updatedAt: new Date(row.updated_at),
   };
 }
 
-export async function getUserByStrategy(database: DatabaseInstance, strategyName: string, strategyId: string): Promise<AuthUser | null> {
+export async function getUserByStrategy(
+  database: DatabaseInstance,
+  strategyName: string,
+  strategyId: string,
+): Promise<AuthUser | null> {
   const query = database.db.query(`
     SELECT u.* FROM auth_users u
     JOIN user_strategies s ON u.id = s.user_id
     WHERE s.strategy_name = ?1 AND s.strategy_id = ?2
   `);
-  
+
   const row = query.get(strategyName, strategyId) as any;
-  
-  if (!row) return null;
+
+  if (!row) {
+    return null;
+  }
 
   const strategies = await getDatabaseUserStrategies(database, row.id);
-  
+
   return {
     ...row,
     profile: JSON.parse(row.profile || "{}"),
     strategies,
     createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at)
+    updatedAt: new Date(row.updated_at),
   };
 }
 
-export async function getDatabaseUserStrategies(database: DatabaseInstance, userId: string): Promise<UserStrategy[]> {
+export async function getDatabaseUserStrategies(
+  database: DatabaseInstance,
+  userId: string,
+): Promise<UserStrategy[]> {
   const query = database.db.query("SELECT * FROM user_strategies WHERE user_id = ?1");
   const rows = query.all(userId) as any[];
-  
-  return rows.map(row => ({
+
+  return rows.map((row) => ({
     id: row.id,
     userId: row.user_id,
     strategyName: row.strategy_name,
     strategyId: row.strategy_id,
     profile: JSON.parse(row.profile || "{}"),
-    tokens: row.tokens ? JSON.parse(row.tokens, (key, value) => {
-      if (key === 'expires_at' && typeof value === 'string') {
-        return new Date(value);
-      }
-      return value;
-    }) : undefined,
+    tokens: row.tokens
+      ? JSON.parse(row.tokens, (key, value) => {
+          if (key === "expires_at" && typeof value === "string") {
+            return new Date(value);
+          }
+          return value;
+        })
+      : undefined,
     createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at)
+    updatedAt: new Date(row.updated_at),
   }));
 }
 
-export async function createUserStrategy(database: DatabaseInstance, strategyData: Omit<UserStrategy, "createdAt" | "updatedAt">): Promise<UserStrategy> {
+export async function createUserStrategy(
+  database: DatabaseInstance,
+  strategyData: Omit<UserStrategy, "createdAt" | "updatedAt">,
+): Promise<UserStrategy> {
   const query = database.db.query(`
     INSERT INTO user_strategies (id, user_id, strategy_name, strategy_id, profile, tokens, created_at, updated_at)
     VALUES (?1, ?2, ?3, ?4, ?5, ?6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -155,7 +177,7 @@ export async function createUserStrategy(database: DatabaseInstance, strategyDat
     strategyData.strategyName,
     strategyData.strategyId,
     JSON.stringify(strategyData.profile || {}),
-    JSON.stringify(strategyData.tokens || {})
+    JSON.stringify(strategyData.tokens || {}),
   ) as any;
 
   return {
@@ -164,23 +186,34 @@ export async function createUserStrategy(database: DatabaseInstance, strategyDat
     strategyName: row.strategy_name,
     strategyId: row.strategy_id,
     profile: JSON.parse(row.profile || "{}"),
-    tokens: row.tokens ? JSON.parse(row.tokens, (key, value) => {
-      if (key === 'expires_at' && typeof value === 'string') {
-        return new Date(value);
-      }
-      return value;
-    }) : undefined,
+    tokens: row.tokens
+      ? JSON.parse(row.tokens, (key, value) => {
+          if (key === "expires_at" && typeof value === "string") {
+            return new Date(value);
+          }
+          return value;
+        })
+      : undefined,
     createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at)
+    updatedAt: new Date(row.updated_at),
   };
 }
 
-export async function deleteUserStrategy(database: DatabaseInstance, userId: string, strategyName: string): Promise<void> {
-  const query = database.db.query("DELETE FROM user_strategies WHERE user_id = ?1 AND strategy_name = ?2");
+export async function deleteUserStrategy(
+  database: DatabaseInstance,
+  userId: string,
+  strategyName: string,
+): Promise<void> {
+  const query = database.db.query(
+    "DELETE FROM user_strategies WHERE user_id = ?1 AND strategy_name = ?2",
+  );
   query.run(userId, strategyName);
 }
 
-export async function createDatabaseSession(database: DatabaseInstance, sessionData: Omit<AuthSession, "createdAt">): Promise<AuthSession> {
+export async function createDatabaseSession(
+  database: DatabaseInstance,
+  sessionData: Omit<AuthSession, "createdAt">,
+): Promise<AuthSession> {
   const query = database.db.query(`
     INSERT INTO auth_sessions (id, user_id, data, expires_at, created_at)
     VALUES (?1, ?2, ?3, ?4, CURRENT_TIMESTAMP)
@@ -191,7 +224,7 @@ export async function createDatabaseSession(database: DatabaseInstance, sessionD
     sessionData.id,
     sessionData.userId,
     JSON.stringify(sessionData.data || {}),
-    sessionData.expiresAt.toISOString()
+    sessionData.expiresAt.toISOString(),
   ) as any;
 
   return {
@@ -199,22 +232,27 @@ export async function createDatabaseSession(database: DatabaseInstance, sessionD
     userId: row.user_id,
     data: JSON.parse(row.data || "{}"),
     expiresAt: new Date(row.expires_at),
-    createdAt: new Date(row.created_at)
+    createdAt: new Date(row.created_at),
   };
 }
 
-export async function getDatabaseSession(database: DatabaseInstance, sessionId: string): Promise<AuthSession | null> {
+export async function getDatabaseSession(
+  database: DatabaseInstance,
+  sessionId: string,
+): Promise<AuthSession | null> {
   const query = database.db.query("SELECT * FROM auth_sessions WHERE id = ?1");
   const row = query.get(sessionId) as any;
-  
-  if (!row) return null;
+
+  if (!row) {
+    return null;
+  }
 
   const session = {
     id: row.id,
     userId: row.user_id,
     data: JSON.parse(row.data || "{}"),
     expiresAt: new Date(row.expires_at),
-    createdAt: new Date(row.created_at)
+    createdAt: new Date(row.created_at),
   };
 
   // Check if session is expired
@@ -225,7 +263,11 @@ export async function getDatabaseSession(database: DatabaseInstance, sessionId: 
   return session;
 }
 
-export async function updateDatabaseSession(database: DatabaseInstance, sessionId: string, data: Record<string, any>): Promise<void> {
+export async function updateDatabaseSession(
+  database: DatabaseInstance,
+  sessionId: string,
+  data: Record<string, any>,
+): Promise<void> {
   const query = database.db.query("UPDATE auth_sessions SET data = ?1 WHERE id = ?2");
   query.run(JSON.stringify(data), sessionId);
 }

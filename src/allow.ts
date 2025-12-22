@@ -1,19 +1,23 @@
 import type { Request, Response } from "verb";
-import type { 
-  AuthConfig, 
-  AuthUser, 
-  AuthSession, 
-  AuthStrategy, 
-  AuthResult, 
-  AuthHandlers,
-  StrategyConfig,
-  UserStrategy
-} from "./types";
 import * as db from "./database";
 import { createAuthMiddleware, sessionMiddleware } from "./middleware";
-import { createLocalStrategy } from "./strategies/local";
-import { createOAuthStrategy, githubStrategy, googleStrategy, discordStrategy } from "./strategies/oauth";
 import { createJWTStrategy } from "./strategies/jwt";
+import { createLocalStrategy } from "./strategies/local";
+import {
+  createOAuthStrategy,
+  discordStrategy,
+  githubStrategy,
+  googleStrategy,
+} from "./strategies/oauth";
+import type {
+  AuthConfig,
+  AuthHandlers,
+  AuthResult,
+  AuthSession,
+  AuthStrategy,
+  AuthUser,
+  UserStrategy,
+} from "./types";
 
 export interface AllowInstance {
   config: AuthConfig;
@@ -23,8 +27,8 @@ export interface AllowInstance {
 
 export function createAllow(config: AuthConfig): AllowInstance {
   const strategies = new Map<string, AuthStrategy>();
-  let database: any ;
-  
+  let database: any;
+
   if (config.database) {
     database = db.createDatabase(config.database);
   }
@@ -57,7 +61,7 @@ export function createAllow(config: AuthConfig): AllowInstance {
   return {
     config,
     strategies,
-    database
+    database,
   };
 }
 
@@ -65,27 +69,39 @@ export function useStrategy(allow: AllowInstance, strategy: AuthStrategy): void 
   allow.strategies.set(strategy.name, strategy);
 }
 
-export async function authenticate(allow: AllowInstance, strategyName: string, req: Request): Promise<AuthResult> {
+export async function authenticate(
+  allow: AllowInstance,
+  strategyName: string,
+  req: Request,
+): Promise<AuthResult> {
   const strategy = allow.strategies.get(strategyName);
   if (!strategy) {
     return { success: false, error: `Strategy '${strategyName}' not found` };
   }
 
-  const strategyConfig = allow.config.strategies.find(s => s.name === strategyName);
+  const strategyConfig = allow.config.strategies.find((s) => s.name === strategyName);
   return strategy.authenticate(req, strategyConfig?.config);
 }
 
-export async function callback(allow: AllowInstance, strategyName: string, req: Request): Promise<AuthResult> {
+export async function callback(
+  allow: AllowInstance,
+  strategyName: string,
+  req: Request,
+): Promise<AuthResult> {
   const strategy = allow.strategies.get(strategyName);
   if (!strategy?.callback) {
     return { success: false, error: `Strategy '${strategyName}' does not support callbacks` };
   }
 
-  const strategyConfig = allow.config.strategies.find(s => s.name === strategyName);
+  const strategyConfig = allow.config.strategies.find((s) => s.name === strategyName);
   return strategy.callback(req, strategyConfig?.config);
 }
 
-export async function createSession(allow: AllowInstance, user: AuthUser, data: Record<string, any> = {}): Promise<AuthSession> {
+export async function createSession(
+  allow: AllowInstance,
+  user: AuthUser,
+  data: Record<string, any> = {},
+): Promise<AuthSession> {
   const sessionId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + (allow.config.sessionDuration || 86400000)); // 24 hours default
 
@@ -94,7 +110,7 @@ export async function createSession(allow: AllowInstance, user: AuthUser, data: 
     userId: user.id,
     data,
     expiresAt,
-    createdAt: new Date()
+    createdAt: new Date(),
   };
 
   if (allow.database) {
@@ -104,32 +120,56 @@ export async function createSession(allow: AllowInstance, user: AuthUser, data: 
   return session;
 }
 
-export async function getSession(allow: AllowInstance, sessionId: string): Promise<AuthSession | null> {
-  if (!allow.database) return null;
+export async function getSession(
+  allow: AllowInstance,
+  sessionId: string,
+): Promise<AuthSession | null> {
+  if (!allow.database) {
+    return null;
+  }
   return db.getDatabaseSession(allow.database, sessionId);
 }
 
-export async function updateSession(allow: AllowInstance, sessionId: string, data: Record<string, any>): Promise<void> {
-  if (!allow.database) return;
+export async function updateSession(
+  allow: AllowInstance,
+  sessionId: string,
+  data: Record<string, any>,
+): Promise<void> {
+  if (!allow.database) {
+    return;
+  }
   await db.updateDatabaseSession(allow.database, sessionId, data);
 }
 
 export async function destroySession(allow: AllowInstance, sessionId: string): Promise<void> {
-  if (!allow.database) return;
+  if (!allow.database) {
+    return;
+  }
   await db.deleteSession(allow.database, sessionId);
 }
 
 export async function getUser(allow: AllowInstance, req: Request): Promise<AuthUser | null> {
   const sessionId = req.cookies?.["allow-session"];
-  if (!sessionId || !allow.database) return null;
+  if (!sessionId || !allow.database) {
+    return null;
+  }
 
   const session = await db.getDatabaseSession(allow.database, sessionId);
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   return db.getUserById(allow.database, session.userId);
 }
 
-export async function linkStrategy(allow: AllowInstance, userId: string, strategyName: string, strategyId: string, profile: any, tokens?: any): Promise<UserStrategy> {
+export async function linkStrategy(
+  allow: AllowInstance,
+  userId: string,
+  strategyName: string,
+  strategyId: string,
+  profile: any,
+  tokens?: any,
+): Promise<UserStrategy> {
   if (!allow.database) {
     throw new Error("Database required for linking strategies");
   }
@@ -140,13 +180,17 @@ export async function linkStrategy(allow: AllowInstance, userId: string, strateg
     strategyName,
     strategyId,
     profile,
-    tokens
+    tokens,
   };
 
   return db.createUserStrategy(allow.database, userStrategy);
 }
 
-export async function unlinkStrategy(allow: AllowInstance, userId: string, strategyName: string): Promise<void> {
+export async function unlinkStrategy(
+  allow: AllowInstance,
+  userId: string,
+  strategyName: string,
+): Promise<void> {
   if (!allow.database) {
     throw new Error("Database required for unlinking strategies");
   }
@@ -154,8 +198,13 @@ export async function unlinkStrategy(allow: AllowInstance, userId: string, strat
   await db.deleteUserStrategy(allow.database, userId, strategyName);
 }
 
-export async function getUserStrategies(allow: AllowInstance, userId: string): Promise<UserStrategy[]> {
-  if (!allow.database) return [];
+export async function getUserStrategies(
+  allow: AllowInstance,
+  userId: string,
+): Promise<UserStrategy[]> {
+  if (!allow.database) {
+    return [];
+  }
   return db.getDatabaseUserStrategies(allow.database, userId);
 }
 
@@ -172,7 +221,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     login: (strategyName: string) => {
       return async (req: Request, res: Response) => {
         const result = await authenticate(allow, strategyName, req);
-        
+
         if (!result.success) {
           return res.status(400).json({ error: result.error });
         }
@@ -186,7 +235,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
           res.cookie("allow-session", session.id, {
             httpOnly: true,
             secure: req.secure,
-            maxAge: allow.config.sessionDuration || 86400000
+            maxAge: allow.config.sessionDuration || 86400000,
           });
         }
 
@@ -197,21 +246,28 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     callback: (strategyName: string) => {
       return async (req: Request, res: Response) => {
         const result = await callback(allow, strategyName, req);
-        
+
         if (!result.success) {
           return res.status(400).json({ error: result.error });
         }
 
         if (result.user) {
           let user = result.user;
-          
+
           if (allow.database) {
             const existingUser = await db.getUserByStrategy(allow.database, strategyName, user.id);
             if (existingUser) {
               user = existingUser;
             } else {
               user = await db.createUser(allow.database, user);
-              await linkStrategy(allow, user.id, strategyName, result.user.id, result.user.profile, result.tokens);
+              await linkStrategy(
+                allow,
+                user.id,
+                strategyName,
+                result.user.id,
+                result.user.profile,
+                result.tokens,
+              );
             }
           }
 
@@ -219,7 +275,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
           res.cookie("allow-session", session.id, {
             httpOnly: true,
             secure: req.secure,
-            maxAge: allow.config.sessionDuration || 86400000
+            maxAge: allow.config.sessionDuration || 86400000,
           });
         }
 
@@ -232,7 +288,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
       if (sessionId) {
         await destroySession(allow, sessionId);
       }
-      
+
       res.clearCookie("allow-session");
       res.json({ success: true });
     },
@@ -264,7 +320,14 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
         }
 
         if (result.user) {
-          await linkStrategy(allow, user.id, strategyName, result.user.id, result.user.profile, result.tokens);
+          await linkStrategy(
+            allow,
+            user.id,
+            strategyName,
+            result.user.id,
+            result.user.profile,
+            result.tokens,
+          );
         }
 
         res.json({ success: true });
@@ -286,7 +349,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
         await unlinkStrategy(allow, user.id, strategyName);
         res.json({ success: true });
       };
-    }
+    },
   };
 }
 

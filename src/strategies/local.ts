@@ -1,5 +1,5 @@
 import type { Request } from "verb";
-import type { AuthResult, LocalConfig, AuthUser, AuthStrategy } from "../types";
+import type { AuthResult, AuthStrategy, AuthUser, LocalConfig } from "../types";
 import { generateError, generateSuccess } from "./base";
 
 export function createLocalStrategy(config: LocalConfig): AuthStrategy {

@@ -1,5 +1,5 @@
 import type { Request } from "verb";
-import type { AuthResult, OAuthConfig, AuthUser, AuthStrategy } from "../types";
+import type { AuthResult, AuthStrategy, AuthUser, OAuthConfig } from "../types";
 import { generateError, generateSuccess } from "./base";
 
 export function createOAuthStrategy(name: string, config: OAuthConfig): AuthStrategy {

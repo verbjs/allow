@@ -1,5 +1,5 @@
 import type { Request } from "verb";
-import type { AuthResult, JWTConfig, AuthUser, AuthStrategy } from "../types";
+import type { AuthResult, AuthStrategy, AuthUser, JWTConfig } from "../types";
 import { generateError, generateSuccess } from "./base";
 
 export function createJWTStrategy(_config: JWTConfig): AuthStrategy {

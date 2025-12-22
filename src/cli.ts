@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { runMigrations, rollbackMigrations } from "./migration";
+import { rollbackMigrations, runMigrations } from "./migration";
 
 const command = process.argv[2];
 const dbConnection = process.env.DATABASE_URL || "auth.db";
@@ -9,22 +9,25 @@ switch (command) {
     await runMigrations({
       database: {
         type: "sqlite",
-        connection: dbConnection
-      }
+        connection: dbConnection,
+      },
     });
     break;
-    
+
   case "rollback": {
     const steps = parseInt(process.argv[3]) || 1;
-    await rollbackMigrations({
-      database: {
-        type: "sqlite", 
-        connection: dbConnection
-      }
-    }, steps);
+    await rollbackMigrations(
+      {
+        database: {
+          type: "sqlite",
+          connection: dbConnection,
+        },
+      },
+      steps,
+    );
     break;
   }
-    
+
   default:
     console.log("Usage: bun src/cli.ts [migrate|rollback] [steps]");
     console.log("Environment variables:");
