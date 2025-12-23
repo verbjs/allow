@@ -22,6 +22,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "dependencies": {
+    "@verb-js/hull": "^0.0.1"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -34,8 +37,8 @@
     "test:watch": "bun test tests/ --watch",
     "build": "bun build src/index.ts --outdir dist --target node",
     "dev": "bun --watch src/index.ts",
-    "migrate": "bun src/cli.ts migrate",
-    "rollback": "bun src/cli.ts rollback",
+    "db:sync": "bun src/cli.ts sync",
+    "db:status": "bun src/cli.ts status",
     "lint": "bunx biome lint --fix ./src/**/*.ts",
     "format": "bunx biome format --write ./src/**/*.ts",
     "prepublishOnly": "bun test",

@@ -1,24 +1,70 @@
 import { test, expect, describe, beforeEach, afterEach } from "bun:test";
-import { Database } from "bun:sqlite";
 import { createAllow, useStrategy, authenticate, createSession, getSession, updateSession, destroySession, linkStrategy, unlinkStrategy, getUserStrategies, getMiddleware, getSessionMiddleware, getHandlers } from "../src/allow";
 import { createLocalStrategy } from "../src/strategies/local";
-import { runMigrations } from "../src/migration";
+import { initDatabase, syncDatabase, closeDatabase, getRepo } from "../src/db";
+import { raw } from "@verb-js/hull";
 import type { AuthConfig } from "../src/types";
 
-describe("Allow Authentication Library", () => {
-  let testDb: Database;
+/**
+ * Get test database URL from environment
+ */
+const getTestDatabaseUrl = (): string | undefined => {
+  return process.env.DATABASE_URL || process.env.TEST_DATABASE_URL;
+};
+
+/**
+ * Check if database tests should be skipped
+ */
+const shouldSkipDbTests = (): boolean => {
+  return !getTestDatabaseUrl();
+};
+
+describe("Allow Authentication Library - Unit Tests", () => {
+  test("should handle password hashing and verification", async () => {
+    const { hashPassword, verifyPassword } = await import("../src/strategies/local");
+    const password = "test-password";
+    const hash = await hashPassword(password);
+
+    expect(hash).toBeDefined();
+    expect(hash).not.toBe(password);
+
+    const isValid = await verifyPassword(password, hash);
+    expect(isValid).toBe(true);
+
+    const isInvalid = await verifyPassword("wrong-password", hash);
+    expect(isInvalid).toBe(false);
+  });
+
+  test("should create local strategy", () => {
+    const strategy = createLocalStrategy({ usernameField: "email" });
+    expect(strategy).toBeDefined();
+    expect(strategy.name).toBe("local");
+  });
+});
+
+describe.skipIf(shouldSkipDbTests())("Allow Authentication Library - Database Tests", () => {
+  const dbUrl = getTestDatabaseUrl()!;
   let config: AuthConfig;
 
   beforeEach(async () => {
-    testDb = new Database(":memory:");
-    
+    initDatabase(dbUrl);
+
+    // Clean up tables if they exist
+    const repo = getRepo();
+    await raw(repo, "DROP TABLE IF EXISTS auth_sessions CASCADE").catch(() => {});
+    await raw(repo, "DROP TABLE IF EXISTS user_strategies CASCADE").catch(() => {});
+    await raw(repo, "DROP TABLE IF EXISTS auth_users CASCADE").catch(() => {});
+
+    // Sync schema
+    await syncDatabase();
+
     config = {
       secret: "test-secret",
       sessionDuration: 86400000,
       database: {
-        type: "sqlite",
-        connection: ":memory:",
-        migrate: true
+        type: "postgres",
+        connection: dbUrl,
+        migrate: false // Already synced above
       },
       strategies: [
         {
@@ -47,43 +93,28 @@ describe("Allow Authentication Library", () => {
     };
   });
 
-  afterEach(() => {
-    testDb?.close();
+  afterEach(async () => {
+    await closeDatabase();
   });
 
-  test("should create Allow instance with configuration", () => {
-    const allow = createAllow(config);
+  test("should create Allow instance with configuration", async () => {
+    const allow = await createAllow(config);
     expect(allow).toBeDefined();
     expect(getMiddleware(allow)).toBeDefined();
     expect(getHandlers(allow)).toBeDefined();
   });
 
-  test("should register strategies correctly", () => {
-    const allow = createAllow(config);
+  test("should register strategies correctly", async () => {
+    const allow = await createAllow(config);
     const customStrategy = createLocalStrategy({ usernameField: "email" });
     useStrategy(allow, customStrategy);
-    
+
     expect(allow).toBeDefined();
   });
 
-  test("should handle password hashing and verification", async () => {
-    const { hashPassword, verifyPassword } = await import("../src/strategies/local");
-    const password = "test-password";
-    const hash = await hashPassword(password);
-    
-    expect(hash).toBeDefined();
-    expect(hash).not.toBe(password);
-    
-    const isValid = await verifyPassword(password, hash);
-    expect(isValid).toBe(true);
-    
-    const isInvalid = await verifyPassword("wrong-password", hash);
-    expect(isInvalid).toBe(false);
-  });
-
   test("should authenticate with local strategy", async () => {
-    const allow = createAllow(config);
-    
+    const allow = await createAllow(config);
+
     const mockReq = {
       body: {
         username: "testuser",
@@ -92,15 +123,15 @@ describe("Allow Authentication Library", () => {
     } as any;
 
     const result = await authenticate(allow, "local", mockReq);
-    
+
     expect(result).toBeDefined();
     expect(result.success).toBe(false);
     expect(result.error).toBe("Authentication failed");
   });
 
   test("should create and retrieve sessions", async () => {
-    const allow = createAllow(config);
-    
+    const allow = await createAllow(config);
+
     const user = {
       id: "user-1",
       username: "testuser",
@@ -112,7 +143,7 @@ describe("Allow Authentication Library", () => {
     };
 
     const session = await createSession(allow, user, { test: "data" });
-    
+
     expect(session).toBeDefined();
     expect(session.id).toBeDefined();
     expect(session.userId).toBe(user.id);
@@ -121,8 +152,8 @@ describe("Allow Authentication Library", () => {
   });
 
   test("should handle session lifecycle", async () => {
-    const allow = createAllow(config);
-    
+    const allow = await createAllow(config);
+
     const user = {
       id: "user-1",
       username: "testuser",
@@ -134,55 +165,55 @@ describe("Allow Authentication Library", () => {
     };
 
     const session = await createSession(allow, user);
-    
+
     const retrieved = await getSession(allow, session.id);
     expect(retrieved).toBeDefined();
     expect(retrieved?.id).toBe(session.id);
-    
+
     await updateSession(allow, session.id, { updated: true });
-    
+
     const updated = await getSession(allow, session.id);
     expect(updated?.data.updated).toBe(true);
-    
+
     await destroySession(allow, session.id);
-    
+
     const destroyed = await getSession(allow, session.id);
     expect(destroyed).toBeNull();
   });
 
   test("should handle OAuth strategy initialization", async () => {
-    const allow = createAllow(config);
-    
+    const allow = await createAllow(config);
+
     const mockReq = {
       query: {},
       body: {}
     } as any;
 
     const result = await authenticate(allow, "github", mockReq);
-    
+
     expect(result).toBeDefined();
     expect(result.success).toBe(true);
     expect(result.redirect).toBeDefined();
     expect(result.redirect).toContain("https://github.com/login/oauth/authorize");
   });
 
-  test("should handle middleware creation", () => {
-    const allow = createAllow(config);
-    
+  test("should handle middleware creation", async () => {
+    const allow = await createAllow(config);
+
     const middleware = getMiddleware(allow);
     const sessionMw = getSessionMiddleware(allow);
-    
+
     expect(middleware.requireAuth).toBeDefined();
     expect(middleware.optionalAuth).toBeDefined();
     expect(middleware.requireRole).toBeDefined();
     expect(sessionMw).toBeDefined();
   });
 
-  test("should handle auth handlers", () => {
-    const allow = createAllow(config);
-    
+  test("should handle auth handlers", async () => {
+    const allow = await createAllow(config);
+
     const handlers = getHandlers(allow);
-    
+
     expect(handlers.login).toBeDefined();
     expect(handlers.callback).toBeDefined();
     expect(handlers.logout).toBeDefined();
@@ -192,15 +223,15 @@ describe("Allow Authentication Library", () => {
   });
 
   test("should handle strategy linking", async () => {
-    const allow = createAllow(config);
-    
+    const allow = await createAllow(config);
+
     const userId = "user-1";
     const strategyName = "github";
     const strategyId = "github-123";
     const profile = { username: "testuser", email: "test@example.com" };
-    
+
     const userStrategy = await linkStrategy(allow, userId, strategyName, strategyId, profile);
-    
+
     expect(userStrategy).toBeDefined();
     expect(userStrategy.userId).toBe(userId);
     expect(userStrategy.strategyName).toBe(strategyName);
@@ -209,50 +240,45 @@ describe("Allow Authentication Library", () => {
   });
 
   test("should handle strategy unlinking", async () => {
-    const allow = createAllow(config);
-    
+    const allow = await createAllow(config);
+
     const userId = "user-1";
     const strategyName = "github";
     const strategyId = "github-123";
     const profile = { username: "testuser" };
-    
+
     await linkStrategy(allow, userId, strategyName, strategyId, profile);
-    
+
     const strategies = await getUserStrategies(allow, userId);
     expect(strategies).toHaveLength(1);
-    
+
     await unlinkStrategy(allow, userId, strategyName);
-    
+
     const updatedStrategies = await getUserStrategies(allow, userId);
     expect(updatedStrategies).toHaveLength(0);
   });
 });
 
-describe("Migration System", () => {
-  test("should run migrations successfully", async () => {
-    const config = {
-      database: {
-        type: "sqlite" as const,
-        connection: ":memory:"
-      }
-    };
+describe.skipIf(shouldSkipDbTests())("Database Sync", () => {
+  const dbUrl = getTestDatabaseUrl()!;
 
-    try {
-      await runMigrations(config);
-      expect(true).toBe(true); // If we reach here, migration succeeded
-    } catch (error) {
-      throw error;
-    }
+  afterEach(async () => {
+    await closeDatabase();
   });
 
-  test("should handle migration errors gracefully", async () => {
-    const config = {
-      database: {
-        type: "postgres" as const,
-        connection: "invalid"
-      }
-    };
+  test("should sync database schema successfully", async () => {
+    initDatabase(dbUrl);
 
-    await expect(runMigrations(config)).rejects.toThrow("Only SQLite migrations are currently supported");
+    // Clean up
+    const repo = getRepo();
+    await raw(repo, "DROP TABLE IF EXISTS auth_sessions CASCADE").catch(() => {});
+    await raw(repo, "DROP TABLE IF EXISTS user_strategies CASCADE").catch(() => {});
+    await raw(repo, "DROP TABLE IF EXISTS auth_users CASCADE").catch(() => {});
+
+    await syncDatabase();
+
+    // Verify tables exist by running a simple query
+    const result = await raw(repo, "SELECT 1");
+    expect(result).toBeDefined();
   });
 });

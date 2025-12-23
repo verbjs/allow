@@ -7,9 +7,25 @@ export interface AuthConfig {
   strategies: StrategyConfig[];
 }
 
+/**
+ * Database configuration for Hull
+ *
+ * @example SQLite
+ * ```ts
+ * { type: "sqlite", connection: "sqlite:///auth.db", migrate: true }
+ * ```
+ *
+ * @example PostgreSQL
+ * ```ts
+ * { type: "postgres", connection: "postgres://user:pass@localhost:5432/mydb", migrate: true }
+ * ```
+ */
 export interface DatabaseConfig {
+  /** Database type */
   type: "sqlite" | "postgres";
+  /** Database connection URL (sqlite:///path or postgres://...) */
   connection: string;
+  /** Auto-sync schema on initialization (creates tables/columns) */
   migrate?: boolean;
 }
 

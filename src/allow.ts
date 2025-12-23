@@ -1,5 +1,11 @@
 import type { Request, Response } from "verb";
-import * as db from "./database";
+import {
+  initDatabase,
+  isDatabaseInitialized,
+  syncDatabase,
+  closeDatabase,
+} from "./db";
+import * as queries from "./db/queries";
 import { createAuthMiddleware, sessionMiddleware } from "./middleware";
 import { createJWTStrategy } from "./strategies/jwt";
 import { createLocalStrategy } from "./strategies/local";
@@ -22,15 +28,25 @@ import type {
 export interface AllowInstance {
   config: AuthConfig;
   strategies: Map<string, AuthStrategy>;
-  database?: any;
+  databaseInitialized: boolean;
 }
 
-export function createAllow(config: AuthConfig): AllowInstance {
+export async function createAllow(config: AuthConfig): Promise<AllowInstance> {
   const strategies = new Map<string, AuthStrategy>();
-  let database: any;
+  let databaseInitialized = false;
 
+  // Initialize database if configured
   if (config.database) {
-    database = db.createDatabase(config.database);
+    initDatabase(config.database.connection);
+    databaseInitialized = true;
+
+    // Auto-sync schema if migrate is enabled
+    if (config.database.migrate) {
+      const result = await syncDatabase();
+      if (result.created.length > 0) {
+        console.log("[allow] Created tables:", result.created.join(", "));
+      }
+    }
   }
 
   // Setup strategies
@@ -61,7 +77,7 @@ export function createAllow(config: AuthConfig): AllowInstance {
   return {
     config,
     strategies,
-    database,
+    databaseInitialized,
   };
 }
 
@@ -113,8 +129,8 @@ export async function createSession(
     createdAt: new Date(),
   };
 
-  if (allow.database) {
-    await db.createDatabaseSession(allow.database, session);
+  if (allow.databaseInitialized) {
+    await queries.createSession(session);
   }
 
   return session;
@@ -124,10 +140,10 @@ export async function getSession(
   allow: AllowInstance,
   sessionId: string,
 ): Promise<AuthSession | null> {
-  if (!allow.database) {
+  if (!allow.databaseInitialized) {
     return null;
   }
-  return db.getDatabaseSession(allow.database, sessionId);
+  return queries.getSession(sessionId);
 }
 
 export async function updateSession(
@@ -135,31 +151,31 @@ export async function updateSession(
   sessionId: string,
   data: Record<string, any>,
 ): Promise<void> {
-  if (!allow.database) {
+  if (!allow.databaseInitialized) {
     return;
   }
-  await db.updateDatabaseSession(allow.database, sessionId, data);
+  await queries.updateSession(sessionId, data);
 }
 
 export async function destroySession(allow: AllowInstance, sessionId: string): Promise<void> {
-  if (!allow.database) {
+  if (!allow.databaseInitialized) {
     return;
   }
-  await db.deleteSession(allow.database, sessionId);
+  await queries.deleteSession(sessionId);
 }
 
 export async function getUser(allow: AllowInstance, req: Request): Promise<AuthUser | null> {
   const sessionId = req.cookies?.["allow-session"];
-  if (!sessionId || !allow.database) {
+  if (!sessionId || !allow.databaseInitialized) {
     return null;
   }
 
-  const session = await db.getDatabaseSession(allow.database, sessionId);
+  const session = await queries.getSession(sessionId);
   if (!session) {
     return null;
   }
 
-  return db.getUserById(allow.database, session.userId);
+  return queries.getUserById(session.userId);
 }
 
 export async function linkStrategy(
@@ -170,7 +186,7 @@ export async function linkStrategy(
   profile: any,
   tokens?: any,
 ): Promise<UserStrategy> {
-  if (!allow.database) {
+  if (!allow.databaseInitialized) {
     throw new Error("Database required for linking strategies");
   }
 
@@ -183,7 +199,7 @@ export async function linkStrategy(
     tokens,
   };
 
-  return db.createUserStrategy(allow.database, userStrategy);
+  return queries.createUserStrategy(userStrategy);
 }
 
 export async function unlinkStrategy(
@@ -191,21 +207,21 @@ export async function unlinkStrategy(
   userId: string,
   strategyName: string,
 ): Promise<void> {
-  if (!allow.database) {
+  if (!allow.databaseInitialized) {
     throw new Error("Database required for unlinking strategies");
   }
 
-  await db.deleteUserStrategy(allow.database, userId, strategyName);
+  await queries.deleteUserStrategy(userId, strategyName);
 }
 
 export async function getUserStrategies(
   allow: AllowInstance,
   userId: string,
 ): Promise<UserStrategy[]> {
-  if (!allow.database) {
+  if (!allow.databaseInitialized) {
     return [];
   }
-  return db.getDatabaseUserStrategies(allow.database, userId);
+  return queries.getUserStrategies(userId);
 }
 
 export function getMiddleware(allow: AllowInstance) {
@@ -254,12 +270,12 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
         if (result.user) {
           let user = result.user;
 
-          if (allow.database) {
-            const existingUser = await db.getUserByStrategy(allow.database, strategyName, user.id);
+          if (allow.databaseInitialized) {
+            const existingUser = await queries.getUserByStrategy(strategyName, user.id);
             if (existingUser) {
               user = existingUser;
             } else {
-              user = await db.createUser(allow.database, user);
+              user = await queries.createUser(user);
               await linkStrategy(
                 allow,
                 user.id,
@@ -352,5 +368,10 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     },
   };
 }
+
+/**
+ * Close database connection (for cleanup)
+ */
+export { closeDatabase };
 
 export { githubStrategy, googleStrategy, discordStrategy };
