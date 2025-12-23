@@ -7,7 +7,7 @@ Allow provides middleware and handlers for authentication and authorization.
 Required for session-based authentication.
 
 ```typescript
-import { getSessionMiddleware } from "@verb/allow"
+import { getSessionMiddleware } from "@verb-js/allow"
 
 const sessionMw = getSessionMiddleware(allow)
 app.use(sessionMw)  // Must be added before auth routes
@@ -22,7 +22,7 @@ The session middleware:
 ## Authentication Middleware
 
 ```typescript
-import { getMiddleware } from "@verb/allow"
+import { getMiddleware } from "@verb-js/allow"
 
 const middleware = getMiddleware(allow)
 ```
@@ -85,7 +85,7 @@ app.put("/users/:id", middleware.requirePermission(["users:read", "users:write"]
 ## Handlers
 
 ```typescript
-import { getHandlers } from "@verb/allow"
+import { getHandlers } from "@verb-js/allow"
 
 const handlers = getHandlers(allow)
 ```

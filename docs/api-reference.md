@@ -9,7 +9,7 @@ Complete API documentation for Allow authentication library.
 Create an Allow instance.
 
 ```typescript
-import { createAllow } from "@verb/allow"
+import { createAllow } from "@verb-js/allow"
 
 const allow = createAllow({
   secret: string,              // JWT secret (required)
@@ -24,7 +24,7 @@ const allow = createAllow({
 Register a custom or built-in strategy.
 
 ```typescript
-import { useStrategy, githubStrategy } from "@verb/allow"
+import { useStrategy, githubStrategy } from "@verb-js/allow"
 
 useStrategy(allow, githubStrategy({
   clientId: "...",
@@ -38,7 +38,7 @@ useStrategy(allow, githubStrategy({
 Manually authenticate a request.
 
 ```typescript
-import { authenticate } from "@verb/allow"
+import { authenticate } from "@verb-js/allow"
 
 const result = await authenticate(allow, "local", req)
 if (result.success) {
@@ -51,7 +51,7 @@ if (result.success) {
 Handle OAuth callback manually.
 
 ```typescript
-import { callback } from "@verb/allow"
+import { callback } from "@verb-js/allow"
 
 const result = await callback(allow, "github", req)
 if (result.success) {
@@ -66,7 +66,7 @@ if (result.success) {
 Create a new session.
 
 ```typescript
-import { createSession } from "@verb/allow"
+import { createSession } from "@verb-js/allow"
 
 const session = await createSession(allow, user, {
   rememberMe: true,
@@ -79,7 +79,7 @@ const session = await createSession(allow, user, {
 Retrieve a session.
 
 ```typescript
-import { getSession } from "@verb/allow"
+import { getSession } from "@verb-js/allow"
 
 const session = await getSession(allow, sessionId)
 if (session && session.expiresAt > new Date()) {
@@ -92,7 +92,7 @@ if (session && session.expiresAt > new Date()) {
 Update session data.
 
 ```typescript
-import { updateSession } from "@verb/allow"
+import { updateSession } from "@verb-js/allow"
 
 await updateSession(allow, sessionId, {
   lastActivity: new Date(),
@@ -105,7 +105,7 @@ await updateSession(allow, sessionId, {
 Delete a session.
 
 ```typescript
-import { destroySession } from "@verb/allow"
+import { destroySession } from "@verb-js/allow"
 
 await destroySession(allow, sessionId)
 ```
@@ -117,7 +117,7 @@ await destroySession(allow, sessionId)
 Get current user from request.
 
 ```typescript
-import { getUser } from "@verb/allow"
+import { getUser } from "@verb-js/allow"
 
 const user = await getUser(allow, req)
 if (user) {
@@ -130,7 +130,7 @@ if (user) {
 Link an authentication strategy to a user.
 
 ```typescript
-import { linkStrategy } from "@verb/allow"
+import { linkStrategy } from "@verb-js/allow"
 
 await linkStrategy(allow, userId, "github", githubId, {
   login: "username",
@@ -146,7 +146,7 @@ await linkStrategy(allow, userId, "github", githubId, {
 Remove a linked strategy.
 
 ```typescript
-import { unlinkStrategy } from "@verb/allow"
+import { unlinkStrategy } from "@verb-js/allow"
 
 await unlinkStrategy(allow, userId, "github")
 ```
@@ -156,7 +156,7 @@ await unlinkStrategy(allow, userId, "github")
 Get all strategies linked to a user.
 
 ```typescript
-import { getUserStrategies } from "@verb/allow"
+import { getUserStrategies } from "@verb-js/allow"
 
 const strategies = await getUserStrategies(allow, userId)
 // [{ name: "local", ... }, { name: "github", ... }]
@@ -169,7 +169,7 @@ const strategies = await getUserStrategies(allow, userId)
 Get session middleware.
 
 ```typescript
-import { getSessionMiddleware } from "@verb/allow"
+import { getSessionMiddleware } from "@verb-js/allow"
 
 const sessionMw = getSessionMiddleware(allow)
 app.use(sessionMw)
@@ -180,7 +180,7 @@ app.use(sessionMw)
 Get authentication middleware.
 
 ```typescript
-import { getMiddleware } from "@verb/allow"
+import { getMiddleware } from "@verb-js/allow"
 
 const middleware = getMiddleware(allow)
 // middleware.requireAuth
@@ -194,7 +194,7 @@ const middleware = getMiddleware(allow)
 Get route handlers.
 
 ```typescript
-import { getHandlers } from "@verb/allow"
+import { getHandlers } from "@verb-js/allow"
 
 const handlers = getHandlers(allow)
 // handlers.register
@@ -214,7 +214,7 @@ const handlers = getHandlers(allow)
 Hash a password using Bun's native crypto.
 
 ```typescript
-import { hashPassword } from "@verb/allow"
+import { hashPassword } from "@verb-js/allow"
 
 const hash = await hashPassword("password123")
 // $2b$12$...
@@ -225,7 +225,7 @@ const hash = await hashPassword("password123")
 Verify a password against a hash.
 
 ```typescript
-import { verifyPassword } from "@verb/allow"
+import { verifyPassword } from "@verb-js/allow"
 
 const isValid = await verifyPassword("password123", hash)
 if (isValid) {
@@ -240,7 +240,7 @@ if (isValid) {
 Create a success result.
 
 ```typescript
-import { generateSuccess } from "@verb/allow"
+import { generateSuccess } from "@verb-js/allow"
 
 return generateSuccess(user, {
   redirect: "/dashboard",
@@ -253,7 +253,7 @@ return generateSuccess(user, {
 Create an error result.
 
 ```typescript
-import { generateError } from "@verb/allow"
+import { generateError } from "@verb-js/allow"
 
 return generateError("Invalid credentials", {
   code: "INVALID_CREDENTIALS",
@@ -368,7 +368,7 @@ interface UserStrategy {
 ### `githubStrategy(config)`
 
 ```typescript
-import { githubStrategy } from "@verb/allow"
+import { githubStrategy } from "@verb-js/allow"
 
 const strategy = githubStrategy({
   clientId: string,
@@ -381,7 +381,7 @@ const strategy = githubStrategy({
 ### `googleStrategy(config)`
 
 ```typescript
-import { googleStrategy } from "@verb/allow"
+import { googleStrategy } from "@verb-js/allow"
 
 const strategy = googleStrategy({
   clientId: string,
@@ -394,7 +394,7 @@ const strategy = googleStrategy({
 ### `discordStrategy(config)`
 
 ```typescript
-import { discordStrategy } from "@verb/allow"
+import { discordStrategy } from "@verb-js/allow"
 
 const strategy = discordStrategy({
   clientId: string,

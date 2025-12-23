@@ -5,7 +5,7 @@ This guide walks you through setting up authentication in your Verb application.
 ## Installation
 
 ```bash
-bun add @verb/allow
+bun add @verb-js/allow
 ```
 
 ## Basic Setup
@@ -13,7 +13,7 @@ bun add @verb/allow
 ### 1. Create the Allow Instance
 
 ```typescript
-import { createAllow } from "@verb/allow"
+import { createAllow } from "@verb-js/allow"
 
 const allow = createAllow({
   secret: process.env.AUTH_SECRET || "your-secret-key",
@@ -66,7 +66,7 @@ const allow = createAllow({
 
 ```typescript
 import { createServer } from "verb"
-import { getSessionMiddleware, getMiddleware, getHandlers } from "@verb/allow"
+import { getSessionMiddleware, getMiddleware, getHandlers } from "@verb-js/allow"
 
 const app = createServer()
 
@@ -124,7 +124,7 @@ database: {
 Run migrations programmatically:
 
 ```typescript
-import { runMigrations } from "@verb/allow"
+import { runMigrations } from "@verb-js/allow"
 
 await runMigrations({
   database: {

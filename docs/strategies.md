@@ -43,7 +43,7 @@ app.post("/auth/login", handlers.login("local"))
 ### GitHub
 
 ```typescript
-import { useStrategy, githubStrategy } from "@verb/allow"
+import { useStrategy, githubStrategy } from "@verb-js/allow"
 
 useStrategy(allow, githubStrategy({
   clientId: process.env.GITHUB_CLIENT_ID!,
@@ -66,7 +66,7 @@ app.get("/auth/github/callback", handlers.callback("github"))
 ### Google
 
 ```typescript
-import { useStrategy, googleStrategy } from "@verb/allow"
+import { useStrategy, googleStrategy } from "@verb-js/allow"
 
 useStrategy(allow, googleStrategy({
   clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -89,7 +89,7 @@ app.get("/auth/google/callback", handlers.callback("google"))
 ### Discord
 
 ```typescript
-import { useStrategy, discordStrategy } from "@verb/allow"
+import { useStrategy, discordStrategy } from "@verb-js/allow"
 
 useStrategy(allow, discordStrategy({
   clientId: process.env.DISCORD_CLIENT_ID!,
@@ -146,8 +146,8 @@ app.get("/api/protected", middleware.requireAuth, (req, res) => {
 Create custom authentication strategies:
 
 ```typescript
-import { useStrategy, generateError, generateSuccess } from "@verb/allow"
-import type { AuthStrategy, AuthResult, VerbRequest } from "@verb/allow"
+import { useStrategy, generateError, generateSuccess } from "@verb-js/allow"
+import type { AuthStrategy, AuthResult, VerbRequest } from "@verb-js/allow"
 
 function createApiKeyStrategy(): AuthStrategy {
   return {
@@ -229,7 +229,7 @@ function createMagicLinkStrategy(): AuthStrategy {
 Allow users to connect multiple authentication methods:
 
 ```typescript
-import { getMiddleware, getHandlers, getUserStrategies } from "@verb/allow"
+import { getMiddleware, getHandlers, getUserStrategies } from "@verb-js/allow"
 
 const middleware = getMiddleware(allow)
 const handlers = getHandlers(allow)
