@@ -50,6 +50,7 @@ export interface LocalConfig {
   usernameField?: string;
   passwordField?: string;
   hashRounds?: number;
+  verifyCredentials?: (username: string, password: string) => Promise<AuthUser | null>;
 }
 
 export interface JWTConfig {
@@ -118,10 +119,10 @@ export interface AuthMiddleware {
 }
 
 export interface AuthHandlers {
-  login: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
-  callback: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
-  logout: (req: Request, res: Response) => void | Promise<void>;
-  profile: (req: Request, res: Response) => void | Promise<void>;
-  link: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
-  unlink: (strategyName: string) => (req: Request, res: Response) => void | Promise<void>;
+  login: (strategyName: string) => (req: Request, res: Response) => Promise<void>;
+  callback: (strategyName: string) => (req: Request, res: Response) => Promise<void>;
+  logout: (req: Request, res: Response) => Promise<void>;
+  profile: (req: Request, res: Response) => Promise<void>;
+  link: (strategyName: string) => (req: Request, res: Response) => Promise<void>;
+  unlink: (strategyName: string) => (req: Request, res: Response) => Promise<void>;
 }

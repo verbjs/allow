@@ -17,8 +17,8 @@ export function createOAuthStrategy(name: string, config: OAuthConfig): AuthStra
     },
 
     async callback(req: Request): Promise<AuthResult> {
-      const code = req.query?.code;
-      const _state = req.query?.state;
+      const code = (req as any).query?.code;
+      const _state = (req as any).query?.state;
 
       if (!code) {
         return generateError("Missing authorization code");
@@ -68,7 +68,7 @@ function buildAuthURL(config: OAuthConfig, state: string): string {
 }
 
 async function exchangeCodeForToken(config: OAuthConfig, code: string): Promise<any> {
-  const response = await fetch(config.tokenURL, {
+  const response = await fetch(config.tokenURL!, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -91,7 +91,7 @@ async function exchangeCodeForToken(config: OAuthConfig, code: string): Promise<
 }
 
 async function getUserProfile(config: OAuthConfig, accessToken: string): Promise<any> {
-  const response = await fetch(config.userInfoURL, {
+  const response = await fetch(config.userInfoURL!, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/json",
@@ -145,4 +145,37 @@ export const discordStrategy = (
     authorizeURL: "https://discord.com/oauth2/authorize",
     tokenURL: "https://discord.com/api/oauth2/token",
     userInfoURL: "https://discord.com/api/users/@me",
+  });
+
+export const facebookStrategy = (
+  config: Omit<OAuthConfig, "authorizeURL" | "tokenURL" | "userInfoURL">,
+) =>
+  createOAuthStrategy("facebook", {
+    ...config,
+    scope: config.scope || ["email", "public_profile"],
+    authorizeURL: "https://www.facebook.com/v19.0/dialog/oauth",
+    tokenURL: "https://graph.facebook.com/v19.0/oauth/access_token",
+    userInfoURL: "https://graph.facebook.com/me?fields=id,name,email,picture",
+  });
+
+export const instagramStrategy = (
+  config: Omit<OAuthConfig, "authorizeURL" | "tokenURL" | "userInfoURL">,
+) =>
+  createOAuthStrategy("instagram", {
+    ...config,
+    scope: config.scope || ["instagram_business_basic"],
+    authorizeURL: "https://www.instagram.com/oauth/authorize",
+    tokenURL: "https://api.instagram.com/oauth/access_token",
+    userInfoURL: "https://graph.instagram.com/me?fields=id,username,account_type",
+  });
+
+export const tiktokStrategy = (
+  config: Omit<OAuthConfig, "authorizeURL" | "tokenURL" | "userInfoURL">,
+) =>
+  createOAuthStrategy("tiktok", {
+    ...config,
+    scope: config.scope || ["user.info.basic"],
+    authorizeURL: "https://www.tiktok.com/v2/auth/authorize",
+    tokenURL: "https://open.tiktokapis.com/v2/oauth/token/",
+    userInfoURL: "https://open.tiktokapis.com/v2/user/info/",
   });

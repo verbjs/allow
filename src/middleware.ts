@@ -3,47 +3,57 @@ import type { AllowInstance } from "./allow";
 import { getSession, getUser } from "./allow";
 import type { AuthMiddleware, AuthSession, AuthUser } from "./types";
 
+// Extended request type with auth properties
+type AuthRequest = Request & {
+  user?: AuthUser;
+  session?: AuthSession;
+  isAuthenticated?: () => boolean;
+};
+
 export function createAuthMiddleware(allow: AllowInstance): AuthMiddleware {
   return {
-    requireAuth: async (req: Request, res: Response, next: () => void) => {
+    requireAuth: async (req: Request, res: Response, next: () => void): Promise<void> => {
       const user = await getUser(allow, req);
 
       if (!user) {
-        return res.status(401).json({ error: "Authentication required" });
+        res.status(401).json({ error: "Authentication required" });
+        return;
       }
 
-      req.user = user;
-      req.isAuthenticated = () => true;
+      (req as AuthRequest).user = user;
+      (req as AuthRequest).isAuthenticated = () => true;
       next();
     },
 
-    optionalAuth: async (req: Request, _res: Response, next: () => void) => {
+    optionalAuth: async (req: Request, _res: Response, next: () => void): Promise<void> => {
       const user = await getUser(allow, req);
 
       if (user) {
-        req.user = user;
-        req.isAuthenticated = () => true;
+        (req as AuthRequest).user = user;
+        (req as AuthRequest).isAuthenticated = () => true;
       } else {
-        req.isAuthenticated = () => false;
+        (req as AuthRequest).isAuthenticated = () => false;
       }
 
       next();
     },
 
     requireRole: (role: string) => {
-      return async (req: Request, res: Response, next: () => void) => {
+      return async (req: Request, res: Response, next: () => void): Promise<void> => {
         const user = await getUser(allow, req);
 
         if (!user) {
-          return res.status(401).json({ error: "Authentication required" });
+          res.status(401).json({ error: "Authentication required" });
+          return;
         }
 
         if (!user.profile?.roles?.includes(role)) {
-          return res.status(403).json({ error: "Insufficient permissions" });
+          res.status(403).json({ error: "Insufficient permissions" });
+          return;
         }
 
-        req.user = user;
-        req.isAuthenticated = () => true;
+        (req as AuthRequest).user = user;
+        (req as AuthRequest).isAuthenticated = () => true;
         next();
       };
     },
@@ -52,12 +62,12 @@ export function createAuthMiddleware(allow: AllowInstance): AuthMiddleware {
 
 export function sessionMiddleware(allow: AllowInstance) {
   return async (req: Request, _res: Response, next: () => void) => {
-    const sessionId = req.cookies?.["allow-session"];
+    const sessionId = (req as any).cookies?.["allow-session"];
 
     if (sessionId) {
       const session = await getSession(allow, sessionId);
       if (session) {
-        req.session = session;
+        (req as AuthRequest).session = session;
       }
     }
 
@@ -65,10 +75,5 @@ export function sessionMiddleware(allow: AllowInstance) {
   };
 }
 
-declare module "verb" {
-  interface Request {
-    user?: AuthUser;
-    session?: AuthSession;
-    isAuthenticated?: () => boolean;
-  }
-}
+// Re-export the extended request type for consumers
+export type { AuthRequest };

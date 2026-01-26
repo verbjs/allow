@@ -85,12 +85,13 @@ export async function getUserByStrategy(
     [strategyName, strategyId],
   );
 
-  if (rows.length === 0) {
+  const row = rows[0];
+  if (!row) {
     return null;
   }
 
-  const strategies = await getUserStrategies(rows[0].id);
-  return rowToUser(rows[0], strategies);
+  const strategies = await getUserStrategies(row.id!);
+  return rowToUser(row, strategies);
 }
 
 // ============================================================================
@@ -224,22 +225,22 @@ export async function cleanupExpiredSessions(): Promise<void> {
 
 function rowToUser(row: AuthUserRow, strategies: UserStrategy[]): AuthUser {
   return {
-    id: row.id,
+    id: row.id!,
     username: row.username ?? undefined,
     email: row.email ?? undefined,
     profile: row.profile ? JSON.parse(row.profile) : {},
     strategies,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
+    createdAt: new Date(row.created_at!),
+    updatedAt: new Date(row.updated_at!),
   };
 }
 
 function rowToStrategy(row: UserStrategyRow): UserStrategy {
   return {
-    id: row.id,
-    userId: row.user_id,
-    strategyName: row.strategy_name,
-    strategyId: row.strategy_id,
+    id: row.id!,
+    userId: row.user_id!,
+    strategyName: row.strategy_name!,
+    strategyId: row.strategy_id!,
     profile: row.profile ? JSON.parse(row.profile) : {},
     tokens: row.tokens
       ? JSON.parse(row.tokens, (key, value) => {
@@ -250,17 +251,17 @@ function rowToStrategy(row: UserStrategyRow): UserStrategy {
           return value;
         })
       : undefined,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
+    createdAt: new Date(row.created_at!),
+    updatedAt: new Date(row.updated_at!),
   };
 }
 
 function rowToSession(row: AuthSessionRow): AuthSession {
   return {
-    id: row.id,
-    userId: row.user_id,
+    id: row.id!,
+    userId: row.user_id!,
     data: row.data ? JSON.parse(row.data) : {},
-    expiresAt: new Date(row.expires_at),
-    createdAt: new Date(row.created_at),
+    expiresAt: new Date(row.expires_at!),
+    createdAt: new Date(row.created_at!),
   };
 }

@@ -26,12 +26,12 @@ export function createJWTStrategy(_config: JWTConfig): AuthStrategy {
 }
 
 function extractToken(req: Request): string | null {
-  const authHeader = req.headers.get("Authorization");
+  const authHeader = req.headers?.get("Authorization");
   if (authHeader?.startsWith("Bearer ")) {
     return authHeader.substring(7);
   }
 
-  return req.query?.token || req.body?.token || null;
+  return (req as any).query?.token || (req as any).body?.token || null;
 }
 
 async function verifyToken(token: string): Promise<any> {

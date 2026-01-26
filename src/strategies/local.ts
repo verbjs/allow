@@ -1,5 +1,5 @@
 import type { Request } from "verb";
-import type { AuthResult, AuthStrategy, AuthUser, LocalConfig } from "../types";
+import type { AuthResult, AuthStrategy, LocalConfig } from "../types";
 import { generateError, generateSuccess } from "./base";
 
 export function createLocalStrategy(config: LocalConfig): AuthStrategy {
@@ -9,15 +9,19 @@ export function createLocalStrategy(config: LocalConfig): AuthStrategy {
     async authenticate(req: Request): Promise<AuthResult> {
       const { usernameField = "username", passwordField = "password" } = config;
 
-      const username = req.body?.[usernameField];
-      const password = req.body?.[passwordField];
+      const username = (req as any).body?.[usernameField];
+      const password = (req as any).body?.[passwordField];
 
       if (!username || !password) {
         return generateError("Missing username or password");
       }
 
+      if (!config.verifyCredentials) {
+        return generateError("verifyCredentials not configured");
+      }
+
       try {
-        const user = await verifyCredentials(username, password);
+        const user = await config.verifyCredentials(username, password);
         if (!user) {
           return generateError("Invalid credentials");
         }
@@ -28,10 +32,6 @@ export function createLocalStrategy(config: LocalConfig): AuthStrategy {
       }
     },
   };
-}
-
-async function verifyCredentials(_username: string, _password: string): Promise<AuthUser | null> {
-  throw new Error("verifyCredentials must be implemented by the application");
 }
 
 export async function hashPassword(password: string, rounds: number = 10): Promise<string> {

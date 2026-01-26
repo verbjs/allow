@@ -12,8 +12,11 @@ import { createLocalStrategy } from "./strategies/local";
 import {
   createOAuthStrategy,
   discordStrategy,
+  facebookStrategy,
   githubStrategy,
   googleStrategy,
+  instagramStrategy,
+  tiktokStrategy,
 } from "./strategies/oauth";
 import type {
   AuthConfig,
@@ -59,13 +62,13 @@ export async function createAllow(config: AuthConfig): Promise<AllowInstance> {
 
     switch (strategyConfig.type) {
       case "local":
-        strategy = createLocalStrategy(strategyConfig.config);
+        strategy = createLocalStrategy(strategyConfig.config as import("./types").LocalConfig);
         break;
       case "oauth":
-        strategy = createOAuthStrategy(strategyConfig.name, strategyConfig.config);
+        strategy = createOAuthStrategy(strategyConfig.name, strategyConfig.config as import("./types").OAuthConfig);
         break;
       case "jwt":
-        strategy = createJWTStrategy(strategyConfig.config);
+        strategy = createJWTStrategy(strategyConfig.config as import("./types").JWTConfig);
         break;
       default:
         throw new Error(`Unknown strategy type: ${strategyConfig.type}`);
@@ -165,7 +168,7 @@ export async function destroySession(allow: AllowInstance, sessionId: string): P
 }
 
 export async function getUser(allow: AllowInstance, req: Request): Promise<AuthUser | null> {
-  const sessionId = req.cookies?.["allow-session"];
+  const sessionId = (req as any).cookies?.["allow-session"];
   if (!sessionId || !allow.databaseInitialized) {
     return null;
   }
@@ -235,22 +238,24 @@ export function getSessionMiddleware(allow: AllowInstance) {
 export function getHandlers(allow: AllowInstance): AuthHandlers {
   return {
     login: (strategyName: string) => {
-      return async (req: Request, res: Response) => {
+      return async (req: Request, res: Response): Promise<void> => {
         const result = await authenticate(allow, strategyName, req);
 
         if (!result.success) {
-          return res.status(400).json({ error: result.error });
+          res.status(400).json({ error: result.error });
+          return;
         }
 
         if (result.redirect) {
-          return res.redirect(result.redirect);
+          res.redirect(result.redirect);
+          return;
         }
 
         if (result.user) {
           const session = await createSession(allow, result.user);
           res.cookie("allow-session", session.id, {
             httpOnly: true,
-            secure: req.secure,
+            secure: (req as any).secure ?? false,
             maxAge: allow.config.sessionDuration || 86400000,
           });
         }
@@ -260,11 +265,12 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     },
 
     callback: (strategyName: string) => {
-      return async (req: Request, res: Response) => {
+      return async (req: Request, res: Response): Promise<void> => {
         const result = await callback(allow, strategyName, req);
 
         if (!result.success) {
-          return res.status(400).json({ error: result.error });
+          res.status(400).json({ error: result.error });
+          return;
         }
 
         if (result.user) {
@@ -290,7 +296,7 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
           const session = await createSession(allow, user);
           res.cookie("allow-session", session.id, {
             httpOnly: true,
-            secure: req.secure,
+            secure: (req as any).secure ?? false,
             maxAge: allow.config.sessionDuration || 86400000,
           });
         }
@@ -299,8 +305,8 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
       };
     },
 
-    logout: async (req: Request, res: Response) => {
-      const sessionId = req.cookies?.["allow-session"];
+    logout: async (req: Request, res: Response): Promise<void> => {
+      const sessionId = (req as any).cookies?.["allow-session"];
       if (sessionId) {
         await destroySession(allow, sessionId);
       }
@@ -309,10 +315,11 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
       res.json({ success: true });
     },
 
-    profile: async (req: Request, res: Response) => {
+    profile: async (req: Request, res: Response): Promise<void> => {
       const user = await getUser(allow, req);
       if (!user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        res.status(401).json({ error: "Not authenticated" });
+        return;
       }
 
       const strategies = await getUserStrategies(allow, user.id);
@@ -320,19 +327,22 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     },
 
     link: (strategyName: string) => {
-      return async (req: Request, res: Response) => {
+      return async (req: Request, res: Response): Promise<void> => {
         const user = await getUser(allow, req);
         if (!user) {
-          return res.status(401).json({ error: "Not authenticated" });
+          res.status(401).json({ error: "Not authenticated" });
+          return;
         }
 
         const result = await authenticate(allow, strategyName, req);
         if (!result.success) {
-          return res.status(400).json({ error: result.error });
+          res.status(400).json({ error: result.error });
+          return;
         }
 
         if (result.redirect) {
-          return res.redirect(result.redirect);
+          res.redirect(result.redirect);
+          return;
         }
 
         if (result.user) {
@@ -351,15 +361,17 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
     },
 
     unlink: (strategyName: string) => {
-      return async (req: Request, res: Response) => {
+      return async (req: Request, res: Response): Promise<void> => {
         const user = await getUser(allow, req);
         if (!user) {
-          return res.status(401).json({ error: "Not authenticated" });
+          res.status(401).json({ error: "Not authenticated" });
+          return;
         }
 
         const strategies = await getUserStrategies(allow, user.id);
         if (strategies.length <= 1) {
-          return res.status(400).json({ error: "Cannot unlink last authentication method" });
+          res.status(400).json({ error: "Cannot unlink last authentication method" });
+          return;
         }
 
         await unlinkStrategy(allow, user.id, strategyName);
@@ -374,4 +386,11 @@ export function getHandlers(allow: AllowInstance): AuthHandlers {
  */
 export { closeDatabase };
 
-export { githubStrategy, googleStrategy, discordStrategy };
+export {
+  githubStrategy,
+  googleStrategy,
+  discordStrategy,
+  facebookStrategy,
+  instagramStrategy,
+  tiktokStrategy,
+};
